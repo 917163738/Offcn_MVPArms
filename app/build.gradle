@@ -1,34 +1,212 @@
 apply plugin: 'com.android.application'
+def getDate() {
+    return new Date().format("yyyyMMdd")
+}
 
+repositories {
+    flatDir {
+        dirs 'libs'
+    }
+}
 android {
-    compileSdkVersion 26
+    compileSdkVersion rootProject.ext.android["compileSdkVersion"]
+    buildToolsVersion rootProject.ext.android["buildToolsVersion"]
+    aaptOptions.cruncherEnabled = false
+    aaptOptions.useNewCruncher = false
+    useLibrary 'org.apache.http.legacy'
+
+    compileOptions {
+        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_1_8
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+        //请替换中公签名
+        release {
+            keyAlias 'XXXXXX'
+            keyPassword 'XXXXXX'
+            storeFile file('offcn_keystore.jks')
+            storePassword 'XXXXXXX'
+        }
+    }
     defaultConfig {
-        applicationId "com.offcn.android.offcncommonutil"
-        minSdkVersion 21
-        targetSdkVersion 26
-        versionCode 1
-        versionName "1.0"
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        applicationId "com.offcn.android"
+        minSdkVersion rootProject.ext.android["minSdkVersion"]
+        targetSdkVersion rootProject.ext.android["targetSdkVersion"]
+        versionCode rootProject.ext.android["versionCode"]
+        versionName rootProject.ext.android["versionName"]
+        flavorDimensions "versionCode"
+        testInstrumentationRunner rootProject.ext.dependencies["androidJUnitRunner"]
+        multiDexEnabled true
+        manifestPlaceholders = [package_name: "XXXX", SERVER_MODE: SERVER_MODE_JENKINS]
+        ndk {
+// 设置支持的SO库架构
+            abiFilters 'armeabi', 'armeabi-v7a'
+        }
+
     }
     buildTypes {
-        release {
+
+        debug {
+            buildConfigField "boolean", "LOG_DEBUG", "true"
+            buildConfigField "boolean", "USE_CANARY", "true"
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+
+        release {
+            buildConfigField "boolean", "LOG_DEBUG", "false"
+            buildConfigField "boolean", "USE_CANARY", "false"
+            minifyEnabled true
+            shrinkResources true
+            zipAlignEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
     }
+    // 这里是为了不同过的版本设置一些特殊的参数，并不直接和 buildType 关联。
+    //例如：使用 buildType 中的 dev 版本，也可以使用 flavors_release 里面设置的自定义参数。这需要自己按照需求制定。
+    productFlavors {
+        //自定义名字不过不能和上面buildType中相同，不然Gradle编译会不通过。在这里使用了『flavors_』前缀以便区分。
+        flavors_release {
+            // manifestPlaceholders中写到的『str』，『package_name』不支持用大写，否则Gradle编译会不通过。
+            // 这里所设置的变量可以直接使用在『AndroidManifest.xml』中，使用方式为：${package_name}
+            // android:label="${package_name}"
+            manifestPlaceholders = [package_name: "XXXX"]
+            applicationId "com.offcn.android"
+            signingConfig signingConfigs.release
+        }
+        flavors_dev {
+            manifestPlaceholders = [package_name: "XXXXdev"]
+            applicationId 'com.offcn.android'
+            signingConfig signingConfigs.release
+        }
+        wandoujia {
+            manifestPlaceholders = [package_name: "XXXX_豌豆荚"]
+            applicationId 'com.offcn.android'
+            signingConfig signingConfigs.release
+        }
+        baidu {
+            manifestPlaceholders = [package_name: "XXXX_百度"]
+            applicationId 'com.offcn.android'
+            signingConfig signingConfigs.release
+        }
+        QH360 {
+            manifestPlaceholders = [package_name: "XXXX_360"]
+            applicationId 'com.offcn.android'
+            signingConfig signingConfigs.release
+        }
+        xiaomi {
+            manifestPlaceholders = [package_name: "XXXX_小米应用商店"]
+            applicationId 'com.offcn.android'
+            signingConfig signingConfigs.release
+        }
+        yingyongbao {
+            manifestPlaceholders = [package_name: "XXXX_应用宝"]
+            applicationId 'com.offcn.android'
+            signingConfig signingConfigs.release
+        }
+        productFlavors.all { flavor ->
+            flavor.manifestPlaceholders = [UMENG_CHANNEL_VALUE: name]
+        }
+    }
+    applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            def newName
+            def timeNow
+            def oldFile = output.outputFile
+            def outDirectory = oldFile.parent
+
+            if ("true" == IS_JENKINS) {
+                //timeNow = getDate()
+                newName = 'XXXXXX' +
+                        APP_VERSION + '-' + variant.productFlavors[0].name + '-' + variant.buildType.name + '.apk'
+
+
+            } else {
+                timeNow = getDate()
+                if (variant.buildType.name == 'debug') {
+                    newName = "XXXXXX${APP_VERSION}-debug.apk"
+                } else {
+                    newName = 'XXXXX' +
+                            APP_VERSION + '-' + variant.productFlavors[0].name + timeNow + '-' + variant.buildType.name + '.apk'
+                }
+
+            }
+
+            output.outputFileName  = newName
+            // 删除unaligned apk
+            //if (output.zipAlign != null) {
+            //   output.zipAlign.doLast {
+            //       output.zipAlign.inputFile.delete()
+            // }
+            //}
+        }
+        if ("true" == IS_JENKINS) {
+            variant.assemble.doLast {
+                variant.outputs.each { output ->
+                    def intoFile = 'D:/apache-tomcat-9.0.0.M22/webapps/apk'
+                    copy {
+                        from output.outputFile
+                        into intoFile
+                    }
+                    println("=====================build.variant success.=========================")
+                }
+            }
+        }
+
+    }
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+
     lintOptions {
         disable 'InvalidPackage'
         disable "ResourceType"
         abortOnError false
     }
+    dexOptions {
+        javaMaxHeapSize "4g"
+    }
+}
+
+
+buildscript {
+    repositories {
+        jcenter()
+    }
 }
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.android.support:appcompat-v7:26.1.0'
-    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
-    testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.1'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
-    compile project(':arms')
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    //support
+    implementation(rootProject.ext.dependencies["cardview-v7"]) {
+        exclude module: 'support-annotations'
+    }
+    //tools
+    annotationProcessor rootProject.ext.dependencies["dagger2-compiler"]
+    implementation rootProject.ext.dependencies["progressmanager"]
+    implementation rootProject.ext.dependencies["retrofit-url-manager"]
+    implementation rootProject.ext.dependencies["lifecyclemodel"]
+    //view
+    annotationProcessor(rootProject.ext.dependencies["butterknife-compiler"]) {
+        exclude module: 'support-annotations'
+    }
+    implementation rootProject.ext.dependencies["paginate"]
+    //arms
+    implementation project(':arms')
+    //Github 仓库上最新的 Demo 具有下一个版本的新特性, 所以依赖最新的远程库会出现版本不兼容的情况, 详情请查看 https://github.com/JessYanCoding/MVPArms/wiki/Issues#2
+//    implementation 'me.jessyan:arms:2.3.5'
+    //test
+    testImplementation rootProject.ext.dependencies["junit"]
+    debugImplementation rootProject.ext.dependencies["canary-debug"]
+    releaseImplementation rootProject.ext.dependencies["canary-release"]
+    testImplementation rootProject.ext.dependencies["canary-release"]
 //    compile files('libs/org.apache.http.legacy.jar')
 }

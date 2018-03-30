@@ -1,4 +1,4 @@
-package com.offcn.android.offcncommonutil;
+package com.offcn.android;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
