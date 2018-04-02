@@ -185,7 +185,22 @@ buildscript {
 }
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'com.offcn:mvp-arms:1.0.1'
     //support
+    api(rootProject.ext.dependencies["support-v4"]) {
+        exclude module: 'support-annotations'
+    }
+    api(rootProject.ext.dependencies["appcompat-v7"]) {
+        exclude module: 'support-annotations'
+        exclude module: 'support-v4'
+    }
+    api(rootProject.ext.dependencies["design"]) {
+        exclude module: 'support-annotations'
+        exclude module: 'appcompat-v7'
+        exclude module: 'support-v4'
+    }
+    api rootProject.ext.dependencies["annotations"]
+
     implementation(rootProject.ext.dependencies["cardview-v7"]) {
         exclude module: 'support-annotations'
     }
@@ -199,8 +214,9 @@ dependencies {
         exclude module: 'support-annotations'
     }
     implementation rootProject.ext.dependencies["paginate"]
+    implementation rootProject.ext.dependencies["material-dialogs"]
     //arms
-    implementation project(':arms')
+//    implementation project(':arms')
     //Github 仓库上最新的 Demo 具有下一个版本的新特性, 所以依赖最新的远程库会出现版本不兼容的情况, 详情请查看 https://github.com/JessYanCoding/MVPArms/wiki/Issues#2
 //    implementation 'me.jessyan:arms:2.3.5'
     //test
