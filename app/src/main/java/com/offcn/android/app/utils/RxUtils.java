@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.offcn.android;
+package com.offcn.android.app.utils;
 
 import com.jess.arms.mvp.IView;
 import com.jess.arms.utils.RxLifecycleUtils;

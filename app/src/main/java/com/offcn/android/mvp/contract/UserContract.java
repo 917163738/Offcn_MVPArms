@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.offcn.android;
+package com.offcn.android.mvp.contract;
 
 import android.app.Activity;
 
 import com.jess.arms.mvp.IModel;
 import com.jess.arms.mvp.IView;
+import com.offcn.android.mvp.model.entity.User;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import java.util.List;
