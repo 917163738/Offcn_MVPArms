@@ -150,7 +150,7 @@ android {
         if ("true" == IS_JENKINS) {
             variant.assemble.doLast {
                 variant.outputs.each { output ->
-                    def intoFile = 'D:/apache-tomcat-9.0.0.M22/webapps/apk'
+                    def intoFile = '/var/lib/jenkins/apks'
                     copy {
                         from output.outputFile
                         into intoFile
